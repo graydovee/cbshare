@@ -1,6 +1,7 @@
 # share clipboard
-share clipboard from different machine
-develop base on [clipboard](https://github.com/atotto/clipboard)
+* share clipboard from different machine
+* 在多个机器间共享剪贴板
+* develop base on [clipboard](https://github.com/atotto/clipboard)
 
 ## build 
 ```bash

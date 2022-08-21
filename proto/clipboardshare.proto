@@ -1,0 +1,28 @@
+syntax = "proto3";
+package proto;
+
+option go_package = "github.com/graydovee/clipboardshare/pkg/proto";
+
+message UpdateClipboardMsgRequest {
+  string data = 1;
+  int64 timestamp = 2;
+}
+
+message UpdateClipboardMsgResponse {
+  int32 code = 1;
+}
+
+message GetClipboardMsgRequest {
+
+}
+
+message GetClipboardMsgResponse {
+  string data = 1;
+  int64 lastUpdateTime = 2;
+}
+
+service Clipboard {
+  rpc UpdateClipboardMsg (UpdateClipboardMsgRequest) returns (UpdateClipboardMsgResponse) {}
+
+  rpc GetClipboardMsg (GetClipboardMsgRequest) returns (GetClipboardMsgResponse) {}
+}

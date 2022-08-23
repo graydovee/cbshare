@@ -1,7 +1,3 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
-*/
 package cmd
 
 import (
@@ -34,7 +30,6 @@ var (
 func init() {
 	rootCmd.AddCommand(serverCmd)
 
-	serverCmd.Flags().AddFlagSet(rootCmd.Flags())
 	serverCmd.Flags().Uint16VarP(&serverPort, "port", "p", 29933, "server listen port")
 	serverCmd.Flags().StringVarP(&serverAddr, "addr", "a", "", "server listen address")
 }

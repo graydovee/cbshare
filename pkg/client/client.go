@@ -1,11 +1,12 @@
 package client
 
 import (
+	"bytes"
 	"context"
-	"github.com/atotto/clipboard"
 	"github.com/graydovee/clipboardshare/pkg/common"
 	"github.com/graydovee/clipboardshare/pkg/logger"
 	"github.com/graydovee/clipboardshare/pkg/proto"
+	"golang.design/x/clipboard"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
@@ -17,7 +18,7 @@ type ClipboardClient struct {
 	cli proto.ClipboardClient
 
 	lastUpdateTime time.Time
-	data           string
+	data           []byte
 
 	mu sync.RWMutex
 }
@@ -27,6 +28,10 @@ func NewClipboardClient() *ClipboardClient {
 }
 
 func (c *ClipboardClient) Start(addr string) {
+	err := clipboard.Init()
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
@@ -37,11 +42,11 @@ func (c *ClipboardClient) Start(addr string) {
 	c.cli = proto.NewClipboardClient(conn)
 
 	ticker := time.NewTicker(time.Second * 1)
+	go c.watchClipboard()
 	for {
 		select {
 		case <-ticker.C:
 			c.requestClipboard()
-			c.updateClipboard()
 		}
 	}
 }
@@ -60,26 +65,23 @@ func (c *ClipboardClient) requestClipboard() {
 	if !c.IsNeedUpdate(resp.Data, lastUpdateTime) {
 		return
 	}
-	if err = clipboard.WriteAll(resp.Data); err != nil {
-		logger.Sugar().Errorw("update clipboard error", "err", err)
-		return
-	}
+	clipboard.Write(clipboard.FmtText, resp.Data)
 	if c.UpdateLocalClipboard(resp.Data, lastUpdateTime) {
-		logger.Sugar().Infow("update local clipboard", "data", resp.Data)
+		logger.Sugar().Infow("update local clipboard", "data", string(resp.Data))
 	}
 }
 
-func (c *ClipboardClient) updateClipboard() {
+func (c *ClipboardClient) watchClipboard() {
+	ch := clipboard.Watch(context.Background(), clipboard.FmtText)
+	for data := range ch {
+		logger.Sugar().Infow("watched clipboard changed", "data", string(data))
+		c.updateClipboard(data)
+	}
+}
+
+func (c *ClipboardClient) updateClipboard(data []byte) {
 	now := time.Now()
-	data, err := clipboard.ReadAll()
-	if err != nil {
-		logger.Sugar().Errorw("read clipboard error", "err", err)
-		return
-	}
-	if c.GetData() == data {
-		return
-	}
-	if !c.IsNeedUpdate(data, now) {
+	if !c.UpdateLocalClipboard(data, now) {
 		return
 	}
 
@@ -96,26 +98,24 @@ func (c *ClipboardClient) updateClipboard() {
 	}
 
 	if resp.Code != common.CodeOk {
-		logger.Sugar().Errorw("update clipboard error", "code", resp.Code, "data", data, "timestamp")
+		logger.Sugar().Errorw("update clipboard error", "code", resp.Code, "data", string(data), "timestamp")
 		return
 	}
 
-	if c.UpdateLocalClipboard(data, now) {
-		logger.Sugar().Infow("update remote clipboard", "data", data)
-	}
+	logger.Sugar().Infow("update remote clipboard", "data", string(data))
 }
 
-func (c *ClipboardClient) unsafeIsNeedUpdate(data string, lastUpdateTime time.Time) bool {
-	return lastUpdateTime.After(c.lastUpdateTime) && data != c.data
+func (c *ClipboardClient) unsafeIsNeedUpdate(data []byte, lastUpdateTime time.Time) bool {
+	return lastUpdateTime.After(c.lastUpdateTime) && !bytes.Equal(data, c.data)
 }
 
-func (c *ClipboardClient) IsNeedUpdate(data string, lastUpdateTime time.Time) bool {
+func (c *ClipboardClient) IsNeedUpdate(data []byte, lastUpdateTime time.Time) bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.unsafeIsNeedUpdate(data, lastUpdateTime)
 }
 
-func (c *ClipboardClient) UpdateLocalClipboard(data string, lastUpdateTime time.Time) bool {
+func (c *ClipboardClient) UpdateLocalClipboard(data []byte, lastUpdateTime time.Time) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if !c.unsafeIsNeedUpdate(data, lastUpdateTime) {
@@ -132,7 +132,7 @@ func (c *ClipboardClient) GetLastUpdateTime() time.Time {
 	return c.lastUpdateTime
 }
 
-func (c *ClipboardClient) GetData() string {
+func (c *ClipboardClient) GetData() []byte {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.data

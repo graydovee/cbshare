@@ -14,7 +14,7 @@ import (
 type ClipboardServer struct {
 	proto.UnimplementedClipboardServer
 
-	data           string
+	data           []byte
 	lastUpdateTime time.Time
 
 	mu sync.RWMutex
@@ -37,7 +37,7 @@ func (c *ClipboardServer) UpdateClipboardMsg(ctx context.Context, request *proto
 
 	updateTime := time.UnixMilli(request.Timestamp)
 	if code := c.checkTimestamp(updateTime); code != common.CodeOk {
-		logger.Sugar().Errorw("timestamp error", "data", request.Data, "updateTime", updateTime, "storedTimeStamp", c.lastUpdateTime, "code", code)
+		logger.Sugar().Errorw("timestamp error", "data", string(request.Data), "updateTime", updateTime, "storedTimeStamp", c.lastUpdateTime, "code", code)
 		return &proto.UpdateClipboardMsgResponse{
 			Code: code,
 		}, nil
@@ -45,7 +45,7 @@ func (c *ClipboardServer) UpdateClipboardMsg(ctx context.Context, request *proto
 
 	c.lastUpdateTime = updateTime
 	c.data = request.Data
-	logger.Sugar().Infow("receive msg", "data", c.data, "lastUpdateTime", c.lastUpdateTime)
+	logger.Sugar().Infow("receive msg", "data", string(c.data), "lastUpdateTime", c.lastUpdateTime)
 	return &proto.UpdateClipboardMsgResponse{
 		Code: common.CodeOk,
 	}, nil
@@ -54,8 +54,13 @@ func (c *ClipboardServer) UpdateClipboardMsg(ctx context.Context, request *proto
 func (c *ClipboardServer) GetClipboardMsg(ctx context.Context, request *proto.GetClipboardMsgRequest) (*proto.GetClipboardMsgResponse, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
+	var data []byte
+	if c.data != nil {
+		data = make([]byte, len(c.data))
+		copy(data, c.data)
+	}
 	return &proto.GetClipboardMsgResponse{
-		Data:           c.data,
+		Data:           data,
 		LastUpdateTime: c.lastUpdateTime.UnixMilli(),
 	}, nil
 }

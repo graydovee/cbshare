@@ -1,7 +1,3 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
-*/
 package cmd
 
 import (
@@ -32,6 +28,5 @@ var (
 func init() {
 	rootCmd.AddCommand(clientCmd)
 
-	serverCmd.Flags().AddFlagSet(rootCmd.Flags())
 	clientCmd.Flags().StringVarP(&clientAddr, "addr", "a", "127.0.0", "serverAddr")
 }

@@ -1,0 +1,14 @@
+[Unit]
+Description=cbshare server
+Documentation=https://github.com/graydovee/cbshare
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Restart=on-failure
+RestartSec=5s
+ExecStart=/usr/bin/cbshare client --addr=<ServerAddr> --log-file=/var/log/cbshare/cbshare.log
+
+[Install]
+WantedBy=multi-user.target

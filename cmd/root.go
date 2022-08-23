@@ -31,7 +31,7 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().BoolVar(&logger.DefaultOptions.EncoderJson, "log-encode-json", false, "log output with json format")
-	rootCmd.Flags().StringVar(&logger.DefaultOptions.LogFile, "log-file", "", "log output file, if empty, only output to std")
-	rootCmd.Flags().BoolVar(&logger.DefaultOptions.Development, "log-development", false, "development mod")
+	rootCmd.PersistentFlags().BoolVar(&logger.DefaultOptions.EncoderJson, "log-encode-json", false, "log output with json format")
+	rootCmd.PersistentFlags().StringVar(&logger.DefaultOptions.LogFile, "log-file", "", "log output file, if empty, only output to std")
+	rootCmd.PersistentFlags().BoolVar(&logger.DefaultOptions.Development, "log-development", false, "development mod")
 }

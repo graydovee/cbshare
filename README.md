@@ -3,7 +3,7 @@
 * 在多个机器间共享剪贴板
 * develop base on [clipboard](https://github.com/atotto/clipboard)
 
-## build 
+## build
 ```bash
 make build
 ```
@@ -29,12 +29,8 @@ sudo systemctl enable cbshares
 ```bash
 cbshare client -a <addr>:<port>
 ```
-### systemd
-1. put the binary to /usr/bin
-2. replace <ServerAddr> with your real server address at systemd/cbshares.service
-3. run this command
+
+### nohup
 ```bash
-sudo cp systemd/cbsharec.service /usr/lib/systemd/system/cbsharec.service
-sudo systemctl start cbsharec
-sudo systemctl enable cbsharec
+./start.sh <addr>:<port>
 ```
